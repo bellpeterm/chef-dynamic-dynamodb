@@ -21,22 +21,31 @@
 include_recipe "git"
 include_recipe "python"
 
-#### going to populate the table setup from the databag
-begin
-    tables_databag = data_bag_item('dynamic-dynamodb', 'tables').raw_data
-rescue
-	log 'you have no tables in your databag!'
-	tables_databag = {}
+#### going to populate the table setup from attributes or databag
+if [ Chef::Node::ImmutableMash , Mash ].include? node['dynamic-dynamodb']['config']['tables'].class
+  tables_data = node['dynamic-dynamodb']['config']['tables']
+else
+  begin
+    bagdata = data_bag_item(node['dynamic-dynamodb']['config']['tables_data_bag'], node['dynamic-dynamodb']['config']['tables_data_bag_item']).raw_data
+    if [ Chef::Node::ImmutableArray , Array ].include? node['dynamic-dynamodb']['config']['tables'].class
+      tables_data = bagdata.select {|table| node['dynamic-dynamodb']['config']['tables'].include? table }
+    else
+      tables_data = bagdata
+    end
+  rescue
+    log 'you have no tables in your databag!'
+    tables_data = {}
+  end
 end
 
-#### going to grab your aws keys from the databag
+#### going to grab your aws keys from the databag or attributes
 begin
-    aws_creds = data_bag_item('aws', 'dynamic-dynamodb').to_hash
+  aws_creds = data_bag_item(node['dynamic-dynamodb']['config']['global']['creds_data_bag'], node['dynamic-dynamodb']['config']['global']['creds_data_bag_item']).to_hash
 rescue
-    log 'you have no aws creds in your databag! we are ging to use the ones in your cookbook, or .boto file if nil'
-    aws_creds = {}
-    aws_creds['aws_access_key_id'] = node['dynamic-dynamodb']['config']['global']['aws_access_key_id']
-    aws_creds['aws_secret_access_key_id'] = node['dynamic-dynamodb']['config']['global']['aws_secret_access_key_id']
+  log 'you have no aws creds in your databag! we are ging to use the ones in your cookbook, or .boto file if nil'
+  aws_creds = {}
+  aws_creds['aws_access_key_id'] = node['dynamic-dynamodb']['config']['global']['aws_access_key_id']
+  aws_creds['aws_secret_access_key_id'] = node['dynamic-dynamodb']['config']['global']['aws_secret_access_key_id']
 end
 
 #Create directory at compile time for git resource below
@@ -86,7 +95,7 @@ template "#{node['dynamic-dynamodb']['base_path']}/dynamic-dynamodb/dynamic-dyna
         :log_file => "#{node['dynamic-dynamodb']['log_path']}/dynamic-dynamodb/#{node['dynamic-dynamodb']['log_file']}",
     	:circuit_breaker_url => node['dynamic-dynamodb']['config']['global']['circuit_breaker_url'],
     	:circuit_breaker_timeout => node['dynamic-dynamodb']['config']['global']['circuit_breaker_timeout'],
-    	:tables => tables_databag
+    	:tables => tables_data
     	)
     notifies :restart, "service[dynamic-dynamodb]", :delayed
 	mode 00644
