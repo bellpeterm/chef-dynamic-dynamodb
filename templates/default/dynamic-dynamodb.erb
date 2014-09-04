@@ -12,7 +12,7 @@ start() {
         success $"Dynamic-Dynamodb Started"
         echo
 }
-# Restart the service FOO
+# Restart the service dynamic-dynamodb
 stop() {
         initlog -c "echo -n Stopping Dynamic-Dynamodb: "
         <%= @command %> --daemon stop &
@@ -27,7 +27,7 @@ case "$1" in
         stop
         ;;
   status)
-        status FOO
+        status dynamic-dynamodb
         ;;
   restart|reload|condrestart)
         stop

@@ -106,7 +106,7 @@ template "/etc/init.d/dynamic-dynamodb" do
 end
 
 service "dynamic-dynamodb" do
-  supports :restart => true, :stop => true, :start => true
+  status_command "status dynamic-dynamodb"
   action :enable
   subscribes :restart, "template[/etc/init.d/dynamic-dynamodb]", :immediately
 end
