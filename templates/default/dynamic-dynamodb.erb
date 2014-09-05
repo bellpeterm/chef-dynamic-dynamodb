@@ -5,18 +5,27 @@
 #
 # Get function from functions library
 . /lib/lsb/init-functions
+
+PIDFILE=<%= @pidfile %>
 # Start the service
 start() {
-        initlog -c "echo -n Starting Dynamic-Dynamodb: "
+
+        if [ -e $PIDFILE ]; then
+                pgrep -f "<%= @command %>"
+                if [ $? -ne 0 ]; then
+                        echo "Cleaning up stale PID file: $PIDFILE"
+                        rm $PIDFILE
+                fi
+        fi
+        echo -n "echo -n Starting Dynamic-DynamoDB: "
         <%= @command %> --daemon start &
-        success $"Dynamic-Dynamodb Started"
-        echo
+        echo $"Dynamic-DynamoDB Started"
 }
 # Restart the service dynamic-dynamodb
 stop() {
-        initlog -c "echo -n Stopping Dynamic-Dynamodb: "
+        echo -n "echo -n Stopping Dynamic-DynamoDB: "
         <%= @command %> --daemon stop &
-        echo
+        echo $"Dynamic-DynamoDB Stopped"
 }
 ### main logic ###
 case "$1" in
@@ -27,7 +36,7 @@ case "$1" in
         stop
         ;;
   status)
-        status dynamic-dynamodb
+        pgrep -f "<%= @command %>"
         ;;
   restart|reload|condrestart)
         stop
@@ -37,4 +46,4 @@ case "$1" in
         echo $"Usage: $0 {start|stop|restart|reload|status}"
         exit 1
 esac
-exit 0
+exit $?

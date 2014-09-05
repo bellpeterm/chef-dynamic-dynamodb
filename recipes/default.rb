@@ -101,12 +101,12 @@ template "/etc/init.d/dynamic-dynamodb" do
     group "root"
     mode 0755
     variables(
+	:pidfile => "/tmp/dynamic-dynamodb.default.pid",
         :command => "#{node['dynamic-dynamodb']['base_path']}/dynamic-dynamodb/dynamic-dynamodb -c #{node['dynamic-dynamodb']['base_path']}/dynamic-dynamodb/#{node['dynamic-dynamodb']['config_file']} #{options.join(' ')}"
         )
 end
 
 service "dynamic-dynamodb" do
-  status_command "status dynamic-dynamodb"
   action :enable
   subscribes :restart, "template[/etc/init.d/dynamic-dynamodb]", :immediately
 end
